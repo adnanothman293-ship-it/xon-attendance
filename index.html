@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2b2f36">
+<title>XON - الحضور والانصراف</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#eef0f3; --card:#fff; --ink:#1f2329; --mute:#6b7280; --line:#e3e6ea;
+  --dark:#2b2f36; --dark2:#474d57; --ok:#16a34a; --okbg:#e8f7ee; --bad:#dc2626; --badbg:#fdecec;
+  --warn:#d97706; --warnbg:#fff4e0; --blue:#2563eb; --bluebg:#e9f0ff; --fri:#f6f1e7;
+  --r:16px; --sh:0 6px 20px rgba(20,24,31,.08);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{font-family:'Tajawal',system-ui,sans-serif;background:linear-gradient(180deg,#e6e9ee,#f3f4f6 40%);color:var(--ink);min-height:100vh;font-size:15px}
+button,input,select{font-family:inherit;font-size:15px}
+.top{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,#23272e,#4a505b);color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 16px rgba(0,0,0,.18)}
+.top .logo{font-weight:800;letter-spacing:2px;background:#fff;color:#23272e;border-radius:10px;padding:4px 10px;font-size:15px}
+.top .ttl{flex:1;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top button{background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:10px;padding:8px 11px;cursor:pointer}
+.wrap{max-width:760px;margin:0 auto;padding:14px 14px 40px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:14px;animation:in .28s ease}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+h2{margin:0 0 10px;font-size:18px}
+h3{margin:0 0 8px;font-size:16px}
+.mute{color:var(--mute);font-size:13px}
+label{display:block;font-size:13px;color:var(--mute);margin:10px 0 4px}
+input,select{width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px;background:#fafbfc;outline:none}
+input:focus,select:focus{border-color:var(--dark2);background:#fff}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:13px;font-weight:700;cursor:pointer;margin-top:12px;background:linear-gradient(135deg,#2b2f36,#555c68);color:#fff;transition:transform .1s}
+.btn:active{transform:scale(.98)}
+.btn.light{background:#f1f2f4;color:var(--ink)}
+.btn.red{background:linear-gradient(135deg,#b91c1c,#ef4444)}
+.btn.green{background:linear-gradient(135deg,#15803d,#22c55e)}
+.btn.blue{background:linear-gradient(135deg,#1d4ed8,#3b82f6)}
+.btn[disabled]{opacity:.5;pointer-events:none}
+.row{display:flex;gap:10px;align-items:center}
+.row>*{flex:1}
+.msg{padding:10px 12px;border-radius:12px;margin-top:10px;font-size:14px;display:none}
+.msg.show{display:block}
+.msg.err{background:var(--badbg);color:var(--bad)}
+.msg.ok{background:var(--okbg);color:var(--ok)}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700}
+.b-ok{background:var(--okbg);color:var(--ok)}
+.b-bad{background:var(--badbg);color:var(--bad)}
+.b-mute{background:#f1f2f4;color:var(--mute)}
+.b-warn{background:var(--warnbg);color:var(--warn)}
+.login{max-width:420px;margin:8vh auto 0;padding:0 16px}
+.login .brand{text-align:center;margin-bottom:18px}
+.login .brand .big{display:inline-block;font-size:34px;font-weight:800;letter-spacing:6px;background:linear-gradient(135deg,#23272e,#5b626e);color:#fff;border-radius:18px;padding:10px 26px;box-shadow:var(--sh)}
+.clock{text-align:center;font-size:44px;font-weight:800;letter-spacing:1px;margin:6px 0 0}
+.date{text-align:center;color:var(--mute);margin-bottom:6px}
+.net{display:flex;align-items:center;gap:8px;justify-content:center;padding:10px;border-radius:12px;font-weight:700;margin:10px 0}
+.net.ok{background:var(--okbg);color:var(--ok)}
+.net.bad{background:var(--badbg);color:var(--bad)}
+.punch{width:190px;height:190px;border-radius:50%;border:0;margin:16px auto 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:26px;cursor:pointer;box-shadow:0 14px 30px rgba(0,0,0,.18);transition:transform .12s}
+.punch small{font-size:13px;font-weight:500;opacity:.9;margin-top:4px}
+.punch:active{transform:scale(.96)}
+.punch.in{background:radial-gradient(circle at 30% 30%,#34d399,#15803d)}
+.punch.out{background:radial-gradient(circle at 30% 30%,#f87171,#b91c1c)}
+.punch[disabled]{filter:grayscale(1);opacity:.55}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat{border-radius:14px;padding:12px;text-align:center}
+.stat .v{font-size:22px;font-weight:800;direction:ltr}
+.stat .k{font-size:12px;color:var(--mute);margin-top:2px}
+.s1{background:var(--bluebg)} .s2{background:#eef0f3} .s3{background:var(--badbg)} .s4{background:var(--okbg)}
+.s3 .v{color:var(--bad)} .s4 .v{color:var(--ok)}
+.list .it{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.list .it:last-child{border-bottom:0}
+.av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#3a3f48,#6b7280);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex:0 0 42px}
+.it .nm{font-weight:700}
+.it .grow{flex:1;min-width:0}
+.tabs{display:flex;gap:6px;background:#e5e7eb;padding:4px;border-radius:12px;margin-bottom:12px}
+.tabs button{flex:1;border:0;background:transparent;padding:9px;border-radius:9px;font-weight:700;color:var(--mute);cursor:pointer}
+.tabs button.on{background:#fff;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.monthbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.monthbar button{border:0;background:#f1f2f4;border-radius:10px;padding:8px 14px;font-size:18px;cursor:pointer}
+.monthbar .m{font-weight:800;font-size:16px}
+.tblwrap{overflow-x:auto;border-radius:12px;border:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#2f343c;color:#fff;padding:9px 3px;font-size:12.5px;font-weight:700;position:sticky;top:0}
+td{padding:7px 3px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}
+tr.fri td{background:var(--fri)}
+tr.today td{background:#eef4ff}
+tr.click{cursor:pointer}
+td .sub{display:block;line-height:1.6}
+.num{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}
+tfoot td{font-weight:800;background:#f7f8f9}
+.sumrow td{text-align:right;padding:10px}
+.sumgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.sumgrid .stat .v{font-size:18px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:#f1f2f4;border-radius:10px;padding:6px 10px;font-size:13px;direction:ltr}
+.modal{position:fixed;inset:0;background:rgba(15,18,23,.55);display:flex;align-items:flex-end;justify-content:center;z-index:50;animation:fade .2s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet{background:#fff;width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto;animation:up .25s ease}
+@keyframes up{from{transform:translateY(40px)}to{transform:none}}
+.chk{display:flex;align-items:center;gap:8px;margin-top:10px}
+.chk input{width:20px;height:20px}
+.days{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.days label{margin:0;display:flex;align-items:center;gap:4px;background:#f1f2f4;border-radius:10px;padding:6px 10px;color:var(--ink)}
+.days input{width:16px;height:16px}
+.empty{text-align:center;color:var(--mute);padding:24px 8px}
+.spin{width:30px;height:30px;border:3px solid #d1d5db;border-top-color:var(--dark);border-radius:50%;animation:sp .8s linear infinite;margin:30px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1f2329;color:#fff;padding:12px 18px;border-radius:14px;z-index:99;box-shadow:var(--sh);max-width:90%;text-align:center;animation:in .2s}
+.print-only{display:none}
+@media print{
+  body{background:#fff}
+  .top,.noprint,.monthbar button,.tabs{display:none!important}
+  .card{box-shadow:none;padding:0;margin:0 0 10px}
+  .wrap{max-width:none;padding:0}
+  .print-only{display:block}
+  table{min-width:0;font-size:11px}
+  th{background:#ddd!important;color:#000!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  tr.fri td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .tblwrap{overflow:visible;border:0}
+}
+
+.bignum{font-size:30px;text-align:center;letter-spacing:8px;font-weight:800;direction:ltr;padding:10px}
+.linkbtn{background:none;border:0;color:var(--mute);text-decoration:underline;padding:12px;cursor:pointer;font-size:14px}
+.punch{width:230px;height:230px;font-size:34px}
+.state{margin-top:10px;font-size:18px;padding:10px;border-radius:12px;background:#f1f2f4}
+.state.ok{background:var(--okbg);color:var(--ok)}
+.done{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;animation:fade .15s;text-align:center;padding:20px}
+.done.ok{background:rgba(21,128,61,.96)} .done.bad{background:rgba(185,28,28,.96)}
+.qbtn{border:0;border-radius:12px;padding:12px 10px;font-weight:800;font-size:15px;color:#fff;cursor:pointer;flex:0 0 auto;min-width:86px}
+.qbtn.in{background:linear-gradient(135deg,#15803d,#22c55e)} .qbtn.out{background:linear-gradient(135deg,#b91c1c,#ef4444)}
+.qbtn[disabled]{opacity:.5}
+.credbox{background:#f1f2f4;border-radius:12px;padding:10px;margin-top:10px;text-align:center;font-size:16px}
+.credbox.big b{display:block;font-size:40px;letter-spacing:6px;margin-top:4px}
+</style>
+</head>
+<body>
+<div id="app"><div class="spin"></div></div>
+
+<script>
+/* ================== الإعدادات ================== */
+const SUPABASE_URL = 'https://haymoobohitphxpmkumj.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_cl2vWRbMJjEeBy8OI3yXMA_5O9-oADL';
+const TZ = 'Asia/Baghdad';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'xon-att-auth' } });
+
+const AR_DAYS = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+const AR_MONTHS = ['كانون الثاني','شباط','آذار','نيسان','أيار','حزيران','تموز','آب','أيلول','تشرين الأول','تشرين الثاني','كانون الأول'];
+
+let ME = null;          // نتيجة att_status
+let EDIT_W = null;
+let clockTimer = null;
+let stack = [];         // للرجوع
+const app = document.getElementById('app');
+
+/* ================== أدوات ================== */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(t, ms = 2600){ const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), ms); }
+function errText(e){
+  const m = (e && (e.message || e.error_description || e.error)) || String(e || '');
+  if (/Invalid login credentials/i.test(m)) return 'الإيميل أو كلمة المرور غير صحيحة';
+  if (/Failed to fetch|NetworkError|Load failed/i.test(m)) return 'لا يوجد اتصال بالإنترنت، حاول مرة ثانية';
+  if (/JWT|expired/i.test(m)) return 'انتهت الجلسة، سجّل دخول من جديد';
+  if (/att_logs_one_open|duplicate key/i.test(m)) return 'العامل عنده دخول مفتوح بدون خروج، سجّل خروجه أولاً';
+  return m || 'حدث خطأ غير متوقع';
+}
+window.onerror = (m) => { console.error(m); };
+window.onunhandledrejection = (e) => { console.error(e.reason); toast(errText(e.reason)); };
+
+// أجزاء التاريخ بتوقيت بغداد
+function bgParts(d){
+  const f = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+  const o = {}; f.formatToParts(d).forEach(p => o[p.type] = p.value);
+  return { y:+o.year, m:+o.month, d:+o.day, H:+(o.hour === '24' ? 0 : o.hour), M:+o.minute, S:+o.second };
+}
+const pad = n => String(n).padStart(2, '0');
+function todayStr(){ const p = bgParts(new Date()); return `${p.y}-${pad(p.m)}-${pad(p.d)}`; }
+function hm(ts){ if(!ts) return ''; const p = bgParts(new Date(ts)); const h12 = p.H % 12 || 12; return `${h12}:${pad(p.M)} ${p.H < 12 ? 'ص' : 'م'}`; }
+function fmtH(mins){ mins = Math.round(mins || 0); const s = mins < 0 ? '-' : ''; mins = Math.abs(mins); return `${s}${Math.floor(mins/60)}:${pad(mins%60)}`; }
+function dowOf(dateStr){ const [y,m,d] = dateStr.split('-').map(Number); return new Date(y, m-1, d).getDay(); }
+function daysInMonth(y, m){ return new Date(y, m, 0).getDate(); }
+function localInputVal(ts){ const p = bgParts(new Date(ts)); return `${p.y}-${pad(p.m)}-${pad(p.d)}T${pad(p.H)}:${pad(p.M)}`; }
+function inputToIso(v){ return v ? new Date(v + ':00+03:00').toISOString() : null; }
+function initials(n){ return (n || '?').trim().split(/\s+/).map(x => x[0]).slice(0,2).join(''); }
+
+async function rpc(name, args){ const { data, error } = await sb.rpc(name, args || {}); if (error) throw error; return data; }
+async function adminFn(body){
+  const { data, error } = await sb.functions.invoke('att-admin', { body });
+  if (error){
+    let m = error.message;
+    try { const j = await error.context.json(); if (j && j.error) m = j.error; } catch(_){}
+    throw new Error(m);
+  }
+  if (data && data.error) throw new Error(data.error);
+  return data;
+}
+
+/* ================== التنقل ================== */
+function topbar(title, back){
+  const isWorkerOnly = ME && !ME.is_admin;
+  return `<div class="top">
+    ${back ? `<button onclick="goBack()">➡</button>` : `<span class="logo">XON</span>`}
+    <div class="ttl">${esc(title)}</div>
+    ${isWorkerOnly ? '' : `<button onclick="refreshScreen()">↻</button><button onclick="logout()">🚪</button>`}
+  </div>`;
+}
+let current = null;
+function go(fn, ...args){ if (current) stack.push(current); current = { fn, args }; fn(...args); }
+function goBack(){ const p = stack.pop(); if (p){ current = p; p.fn(...p.args); } else home(); }
+function refreshScreen(){ if (current) current.fn(...current.args); }
+function stopClock(){ if (clockTimer){ clearInterval(clockTimer); clockTimer = null; } }
+
+/* ================== تسجيل الدخول (مرة واحدة ويبقى مفتوحاً) ================== */
+function loginScreen(msg){
+  stopClock(); stack = []; current = null; ME = null;
+  app.innerHTML = `<div class="login">
+    <div class="brand"><span class="big">XON</span><div class="mute" style="margin-top:10px;font-size:15px">الحضور والانصراف</div></div>
+    <div class="card">
+      <label>📧 الإيميل</label><input id="em" type="email" autocomplete="username" inputmode="email" dir="ltr" style="font-size:18px">
+      <label>🔑 كلمة المرور</label><input id="pw" type="password" autocomplete="current-password" dir="ltr" style="font-size:18px">
+      <button class="btn green" id="lb" style="font-size:20px;padding:16px" onclick="doLogin()">✔️ دخول للنظام</button>
+      <div id="lm" class="msg err ${msg ? 'show' : ''}">${esc(msg || '')}</div>
+    </div>
+    <div class="mute" style="text-align:center">تسجّل مرة واحدة فقط، ويبقى النظام مفتوحاً على هذا الموبايل</div>
+  </div>`;
+  document.getElementById('pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+}
+async function doLogin(){
+  const em = document.getElementById('em').value.trim(), pw = document.getElementById('pw').value;
+  const lm = document.getElementById('lm'), lb = document.getElementById('lb');
+  const fail = t => { lm.textContent = t; lm.className = 'msg err show'; };
+  if (!em || !pw) return fail('اكتب الإيميل وكلمة المرور');
+  lb.disabled = true; lb.textContent = '...';
+  try {
+    const { error } = await sb.auth.signInWithPassword({ email: em, password: pw });
+    if (error) throw error;
+    await boot();
+  } catch(e){ fail(errText(e)); lb.disabled = false; lb.textContent = '✔️ دخول للنظام'; }
+}
+async function logout(){ if (!confirm('تسجيل خروج من الحساب على هذا الجهاز؟')) return; stopClock(); await sb.auth.signOut(); loginScreen(); }
+
+async function boot(){
+  app.innerHTML = '<div class="spin"></div>';
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return loginScreen();
+  try { ME = await rpc('att_status'); }
+  catch(e){ return loginScreen(errText(e)); }
+  if (!ME.is_admin && !ME.worker){ await sb.auth.signOut(); return loginScreen('هذا الحساب غير مسجّل في نظام الحضور'); }
+  if (ME.worker && !ME.worker.active && !ME.is_admin){ await sb.auth.signOut(); return loginScreen('حسابك موقوف، راجع المدير'); }
+  stack = []; current = null; home();
+}
+function home(){ stack = []; current = { fn: ME.is_admin ? adminHome : workerHome, args: [] }; current.fn(); }
+
+/* ================== شاشة العامل (زر واحد فقط) ================== */
+async function workerHome(){
+  stopClock();
+  try { ME = await rpc('att_status'); } catch(e){ toast(errText(e)); }
+  const w = ME.worker || {}, open = ME.open, netOk = ME.network_ok;
+  app.innerHTML = topbar(w.full_name || 'XON', ME.is_admin) + `<div class="wrap" style="text-align:center">
+    <div class="card">
+      <div style="font-size:24px;font-weight:800">${esc(w.full_name || '')}</div>
+      <div class="clock num" id="clk">--:--</div>
+      <div class="date" id="dt"></div>
+      ${netOk ? '' : `<div class="net bad" style="font-size:20px;flex-direction:column">
+          <span style="font-size:46px">📶❌</span>اتصل بواي فاي الشركة</div>`}
+      ${open
+        ? `<button class="punch out" id="pb" ${netOk ? '' : 'disabled'} onclick="punch('out')"><span style="font-size:58px">🏠</span>خروج</button>
+           <div class="state ok">🟢 أنت داخل الشركة منذ <b class="num">${hm(open.check_in)}</b></div>`
+        : `<button class="punch in" id="pb" ${netOk ? '' : 'disabled'} onclick="punch('in')"><span style="font-size:58px">🏢</span>دخول</button>
+           <div class="state">⚪ أنت خارج الشركة</div>`}
+      <div id="pm" class="msg"></div>
+    </div>
+    ${!netOk ? `<button class="btn light" style="font-size:18px" onclick="workerHome()">🔄 حاول مرة ثانية</button>` : ''}
+    ${!ME.is_admin ? `<div style="margin-top:40px"><button class="linkbtn" style="opacity:.5" onclick="logout()">تسجيل خروج من الجهاز</button></div>` : ''}
+  </div>`;
+  const tick = () => { const p = bgParts(new Date()); const c = document.getElementById('clk'); if (!c){ stopClock(); return; }
+    c.textContent = `${p.H % 12 || 12}:${pad(p.M)}`;
+    document.getElementById('dt').textContent = `${AR_DAYS[new Date(p.y, p.m-1, p.d).getDay()]} ${p.d}/${p.m}/${p.y}`; };
+  tick();
+  // تحديث تلقائي: إذا سجّل المدير دخول/خروج العامل يتغيّر الزر عنده خلال ثوانٍ
+  const wasOpen = !!open; let n = 0;
+  clockTimer = setInterval(async () => {
+    tick();
+    if (++n % 3 !== 0 || punching || document.hidden) return;
+    try { const st = await rpc('att_status');
+      if (!!st.open !== wasOpen || st.network_ok !== netOk){ ME = st; workerHome(); } } catch(_){}
+  }, 5000);
+}
+function bigDone(ok, title, sub){
+  try { navigator.vibrate && navigator.vibrate(ok ? [80, 60, 80] : [300]); } catch(_){}
+  try { const a = new (window.AudioContext || window.webkitAudioContext)(); const o = a.createOscillator(), g = a.createGain();
+    o.frequency.value = ok ? 880 : 220; o.connect(g); g.connect(a.destination); g.gain.value = .15; o.start(); setTimeout(() => { o.stop(); a.close(); }, ok ? 220 : 500); } catch(_){}
+  const d = document.createElement('div'); d.className = 'done ' + (ok ? 'ok' : 'bad');
+  d.innerHTML = `<div style="font-size:110px">${ok ? '✅' : '❌'}</div><div style="font-size:30px;font-weight:800">${esc(title)}</div><div style="font-size:22px;margin-top:6px" class="num">${esc(sub || '')}</div>`;
+  d.onclick = () => d.remove(); document.body.appendChild(d); setTimeout(() => d.remove(), 2600);
+}
+let punching = false;
+async function punch(kind){
+  if (punching) return; punching = true;
+  const pb = document.getElementById('pb'); pb.disabled = true;
+  try {
+    const r = await rpc(kind === 'in' ? 'att_check_in' : 'att_check_out');
+    if (kind === 'in') bigDone(true, 'تم الدخول', hm(r.check_in));
+    else bigDone(true, 'تم الخروج', hm(r.check_out) + '  •  ' + fmtH((new Date(r.check_out) - new Date(r.check_in)) / 60000) + ' ساعة');
+    await workerHome();
+  } catch(e){
+    const m = errText(e);
+    if (/مسبقاً|لا يوجد دخول مفتوح/.test(m)){ await workerHome(); toast(kind === 'in' ? 'أنت مسجّل دخول مسبقاً (سجّله المدير)' : 'تم تسجيل خروجك مسبقاً'); }
+    else { bigDone(false, 'لم يتم', m); pb.disabled = false; }
+  }
+  finally { punching = false; }
+}
+
+/* ================== لوحة المدير ================== */
+let adminTab = 'workers', workersCache = [], wSearch = '';
+async function adminHome(tab){
+  stopClock();
+  if (tab) adminTab = tab;
+  app.innerHTML = topbar('لوحة المدير — XON') + `<div class="wrap">
+    <div class="tabs noprint">
+      <button class="${adminTab==='workers'?'on':''}" onclick="adminSwitch('workers')">👷 العمال</button>
+      <button class="${adminTab==='settings'?'on':''}" onclick="adminSwitch('settings')">⚙️ الإعدادات والشبكة</button>
+    </div><div id="ab"><div class="spin"></div></div></div>`;
+  if (adminTab === 'workers') await renderWorkers(); else await renderSettings();
+}
+function adminSwitch(t){ adminTab = t; current = { fn: adminHome, args: [] }; adminHome(); }
+
+async function renderWorkers(){
+  const ab = document.getElementById('ab');
+  try { workersCache = await rpc('att_list_workers2'); } catch(e){ ab.innerHTML = `<div class="card msg err show">${esc(errText(e))}</div>`; return; }
+  const inNow = workersCache.filter(w => w.in_now).length, act = workersCache.filter(w => w.active).length;
+  ab.innerHTML = `
+  ${ME.worker ? `<button class="btn blue" style="margin:0 0 14px" onclick="go(workerHome)">⏱️ تسجيل حضوري أنا</button>` : ''}
+  <div class="stats" style="margin-bottom:14px">
+    <div class="stat s4 card" style="margin:0"><div class="v">${inNow}</div><div class="k">داخل الشركة الآن</div></div>
+    <div class="stat s1 card" style="margin:0"><div class="v">${act - inNow < 0 ? 0 : act - inNow}</div><div class="k">خارج الشركة</div></div>
+  </div>
+  <div class="card">
+    <input id="ws" placeholder="🔍 بحث بالاسم أو القسم أو الإيميل" value="${esc(wSearch)}" oninput="wSearch=this.value;drawWorkerList()">
+    <button class="btn green" onclick="workerForm(null)">➕ إضافة عامل</button>
+    <div class="list" id="wl" style="margin-top:8px"></div>
+  </div>`;
+  drawWorkerList();
+}
+function drawWorkerList(){
+  const q = wSearch.trim().toLowerCase();
+  const list = workersCache.filter(w => !q || (w.full_name || '').toLowerCase().includes(q) || (w.department || '').toLowerCase().includes(q) || (w.email || '').toLowerCase().includes(q));
+  const el = document.getElementById('wl'); if (!el) return;
+  el.innerHTML = list.length ? list.map(w => `
+    <div class="it">
+      <div class="av" onclick="go(monthScreen,'${w.id}',null,null,false)">${esc(initials(w.full_name))}</div>
+      <div class="grow" onclick="go(monthScreen,'${w.id}',null,null,false)">
+        <div class="nm">${esc(w.full_name)}</div>
+        <div class="mute">${esc(w.department || 'بدون قسم')}</div>
+        <div class="mute num" style="text-align:right;font-size:12.5px">📧 ${esc(w.email || '')}</div>
+        <div class="mute">${!w.active ? '<span class="badge b-mute">موقوف</span>' : w.in_now ? `<span class="badge b-ok">داخل منذ ${hm(w.open_since)}</span>` : '<span class="badge b-bad">خارج</span>'}
+          ${Number(w.today_minutes) > 0 ? ` • اليوم <b class="num">${fmtH(w.today_minutes)}</b>` : ''}</div>
+      </div>
+      ${w.active ? (w.in_now
+        ? `<button class="qbtn out" onclick="adminPunch('${w.id}','out',this)">🏠 خروج</button>`
+        : `<button class="qbtn in" onclick="adminPunch('${w.id}','in',this)">🏢 دخول</button>`) : ''}
+    </div>`).join('') : `<div class="empty">${workersCache.length ? 'لا توجد نتائج' : 'لا يوجد عمال بعد، اضغط "إضافة عامل"'}</div>`;
+}
+async function adminPunch(id, kind, btn){
+  const w = workersCache.find(x => x.id === id);
+  if (!confirm(`${kind === 'in' ? 'تسجيل دخول' : 'تسجيل خروج'} ${w ? w.full_name : ''} الآن؟`)) return;
+  btn.disabled = true;
+  try { const r = await rpc('att_admin_punch', { p_worker: id, p_kind: kind });
+    toast(`✅ ${w ? w.full_name : ''}: ${kind === 'in' ? 'دخول ' + hm(r.check_in) : 'خروج ' + hm(r.check_out)}`);
+    await renderWorkers(); }
+  catch(e){ toast(errText(e)); btn.disabled = false; }
+}
+
+/* ---------- نموذج عامل (إضافة/تعديل) ---------- */
+function workerForm(w){
+  const isNew = !w;
+  const m = document.createElement('div'); m.className = 'modal';
+  m.innerHTML = `<div class="sheet">
+    <h2>${isNew ? 'إضافة عامل جديد' : 'تعديل بيانات العامل'}</h2>
+    <label>اسم العامل</label><input id="f_n" value="${esc(w?.full_name || '')}">
+    <label>القسم</label><input id="f_d" value="${esc(w?.department || '')}" placeholder="مثال: الورشة، المطبعة، التركيب">
+    <label>الإيميل (للدخول)</label><input id="f_e" type="email" dir="ltr" value="${esc(w?.email || '')}" placeholder="ahmed@xon.com">
+    <label>${isNew ? 'كلمة المرور (6 على الأقل)' : 'كلمة مرور جديدة — اتركها فارغة إن لم تتغير'}</label>
+    <input id="f_p" type="text" dir="ltr" autocomplete="off">
+    ${!isNew ? `<div class="chk"><input type="checkbox" id="f_act" ${w.active ? 'checked' : ''}><span>الحساب فعّال</span></div>` : ''}
+    <div id="f_m" class="msg err"></div>
+    <button class="btn green" id="f_b">${isNew ? '➕ إضافة' : '💾 حفظ التعديلات'}</button>
+    ${!isNew ? `<button class="btn red" id="f_del">🗑️ حذف العامل نهائياً</button>` : ''}
+    <button class="btn light" onclick="this.closest('.modal').remove()">إلغاء</button>
+  </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  const showErr = t => { const x = m.querySelector('#f_m'); x.textContent = t; x.className = 'msg err show'; };
+  m.querySelector('#f_b').onclick = async () => {
+    const b = m.querySelector('#f_b');
+    const name = m.querySelector('#f_n').value.trim(), dept = m.querySelector('#f_d').value.trim(),
+          email = m.querySelector('#f_e').value.trim(), pass = m.querySelector('#f_p').value.trim(), adm = false;
+    if (!name) return showErr('اكتب اسم العامل');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return showErr('اكتب إيميل صحيح');
+    if ((isNew || pass) && pass.length < 6) return showErr('كلمة المرور 6 أحرف أو أرقام على الأقل');
+    b.disabled = true; b.textContent = 'جارِ الحفظ...';
+    try {
+      if (isNew){
+        await adminFn({ action: 'create', full_name: name, department: dept, email, password: pass, is_admin: adm });
+        m.querySelector('.sheet').innerHTML = `<h2>✅ تمت إضافة ${esc(name)}</h2>
+          <div class="mute">سجّل دخول العامل على موبايله مرة واحدة بهذه البيانات، ويبقى مفتوحاً بعدها:</div>
+          <div class="credbox">الإيميل<b class="num" style="display:block;font-size:20px;margin-top:4px">${esc(email)}</b></div>
+          <div class="credbox">كلمة المرور<b class="num" style="display:block;font-size:24px;margin-top:4px">${esc(pass)}</b></div>
+          <button class="btn" onclick="this.closest('.modal').remove()">تم</button>`;
+        refreshScreen();
+      } else {
+        const upd = { action: 'update', id: w.id, full_name: name, department: dept, is_admin: adm, active: m.querySelector('#f_act').checked };
+        if (email.toLowerCase() !== (w.email || '').toLowerCase()) upd.email = email;
+        if (pass) upd.password = pass;
+        await adminFn(upd);
+        m.remove(); toast('✅ تم حفظ التعديلات'); refreshScreen();
+      }
+    } catch(e){ showErr(errText(e)); b.disabled = false; b.textContent = isNew ? '➕ إضافة' : '💾 حفظ التعديلات'; }
+  };
+  if (!isNew) m.querySelector('#f_del').onclick = async () => {
+    if (!confirm(`حذف ${w.full_name} نهائياً مع كل سجلات حضوره؟ لا يمكن التراجع.`)) return;
+    try { await adminFn({ action: 'delete', id: w.id }); m.remove(); toast('تم حذف العامل'); goBack(); }
+    catch(e){ showErr(errText(e)); }
+  };
+}
+
+/* ---------- الإعدادات والشبكة ---------- */
+async function renderSettings(){
+  const ab = document.getElementById('ab');
+  let s, st;
+  try { [s, st] = await Promise.all([rpc('att_get_settings'), rpc('att_status')]); ME = st; }
+  catch(e){ ab.innerHTML = `<div class="card msg err show">${esc(errText(e))}</div>`; return; }
+  const ips = s.allowed_ips || [];
+  const wd = s.weekend_dow || [];
+  ab.innerHTML = `
+  <div class="card">
+    <h2>📶 شبكة (راوتر) الشركة</h2>
+    <div class="mute">العمال لا يستطيعون تسجيل الدخول أو الخروج إلا إذا كانوا متصلين بالشبكة المعتمدة هنا.</div>
+    <label>عنوان شبكتك الحالية</label>
+    <div class="chips"><span class="chip">${esc(st.ip || 'غير معروف')}</span>
+      ${st.network_ok ? '<span class="badge b-ok">معتمدة ✅</span>' : '<span class="badge b-bad">غير معتمدة</span>'}</div>
+    <label>الشبكات المعتمدة حالياً</label>
+    <div class="chips">${ips.length ? ips.map(i => `<span class="chip">${esc(i)}</span>`).join('') : '<span class="badge b-warn">لا توجد شبكة معتمدة — لن يستطيع أي عامل التسجيل</span>'}</div>
+    <div class="msg ok show" style="background:var(--warnbg);color:#92400e">⚠️ اضغط زر الاعتماد وأنت متصل بـ <b>واي فاي الشركة</b> فقط (وليس بيانات الموبايل).</div>
+    <button class="btn green" onclick="setNet('replace')">✅ اعتماد شبكتي الحالية كشبكة الشركة</button>
+    <button class="btn light" onclick="setNet('add')">➕ إضافتها كشبكة ثانية (راوتر آخر للشركة)</button>
+    ${ips.length ? `<button class="btn light" style="color:var(--bad)" onclick="setNet('clear')">🗑️ مسح كل الشبكات المعتمدة</button>` : ''}
+  </div>
+  <div class="card">
+    <h2>🕘 أوقات الدوام</h2>
+    <div class="row"><div><label>بداية الدوام</label><input id="s_st" type="time" value="${esc((s.work_start || '09:00').slice(0,5))}"></div>
+      <div><label>نهاية الدوام</label><input id="s_en" type="time" value="${esc((s.work_end || '18:00').slice(0,5))}"></div></div>
+    <label>ساعات العمل المتوقعة يومياً</label><input id="s_h" type="number" step="0.5" min="1" max="24" value="${esc(s.daily_hours)}">
+    <label>أيام العطلة (تُحسب ساعاتها إضافي بالكامل)</label>
+    <div class="days">${AR_DAYS.map((d,i) => `<label><input type="checkbox" class="s_wd" value="${i}" ${wd.includes(i) ? 'checked' : ''}>${d}</label>`).join('')}</div>
+    <div id="s_m" class="msg"></div>
+    <button class="btn" onclick="saveSettings()">💾 حفظ أوقات الدوام</button>
+  </div>`;
+  const recalc = () => { const a = document.getElementById('s_st').value, b = document.getElementById('s_en').value; if (a && b){ let d = (+b.slice(0,2)*60 + +b.slice(3)) - (+a.slice(0,2)*60 + +a.slice(3)); if (d <= 0) d += 1440; document.getElementById('s_h').value = +(d/60).toFixed(2); } };
+  document.getElementById('s_st').onchange = recalc; document.getElementById('s_en').onchange = recalc;
+}
+async function setNet(mode){
+  if (mode === 'clear' && !confirm('مسح كل الشبكات؟ لن يستطيع أي عامل التسجيل حتى تعتمد شبكة جديدة.')) return;
+  if (mode !== 'clear' && !confirm('هل أنت متصل الآن بواي فاي الشركة الرسمي؟')) return;
+  try { await rpc('att_set_network', { p_mode: mode }); toast(mode === 'clear' ? 'تم المسح' : '✅ تم اعتماد الشبكة'); renderSettings(); }
+  catch(e){ toast(errText(e)); }
+}
+async function saveSettings(){
+  const m = document.getElementById('s_m');
+  const st = document.getElementById('s_st').value, en = document.getElementById('s_en').value, h = parseFloat(document.getElementById('s_h').value);
+  const wd = [...document.querySelectorAll('.s_wd:checked')].map(x => +x.value);
+  if (!st || !en || !(h > 0)){ m.textContent = 'أكمل أوقات الدوام'; m.className = 'msg err show'; return; }
+  try { await rpc('att_update_settings', { p_start: st, p_end: en, p_hours: h, p_weekend: wd }); m.textContent = '✅ تم الحفظ'; m.className = 'msg ok show'; }
+  catch(e){ m.textContent = errText(e); m.className = 'msg err show'; }
+}
+
+/* ================== الجدول الشهري ================== */
+async function monthScreen(workerId, y, mo, selfView){
+  stopClock();
+  const now = bgParts(new Date());
+  y = y || now.y; mo = mo || now.m;
+  if (current){ current.args = [workerId, y, mo, selfView]; }
+  app.innerHTML = topbar(selfView ? 'سجلي الشهري' : 'بيانات العامل', true) + '<div class="wrap"><div class="spin"></div></div>';
+  const from = `${y}-${pad(mo)}-01`, to = `${y}-${pad(mo)}-${pad(daysInMonth(y, mo))}`;
+  let w, logs, settings, email = '';
+  try {
+    const [wr, lr] = await Promise.all([
+      sb.from('att_workers').select('*').eq('id', workerId).single(),
+      sb.from('att_logs').select('*').eq('worker_id', workerId).gte('work_date', from).lte('work_date', to).order('check_in')
+    ]);
+    if (wr.error) throw wr.error; if (lr.error) throw lr.error;
+    w = wr.data; logs = lr.data || [];
+    settings = (ME && ME.settings) || { daily_hours: 9, weekend_dow: [5] };
+    if (!selfView){ const c = workersCache.find(x => x.id === workerId); email = c ? c.email : ''; }
+  } catch(e){ app.querySelector('.wrap').innerHTML = `<div class="card msg err show">${esc(errText(e))}</div>`; return; }
+
+  const daily = Number(settings.daily_hours) * 60;
+  const weekend = settings.weekend_dow || [5];
+  const tStr = todayStr();
+  // بداية الاحتساب: تاريخ إضافة العامل، أو أول يوم مسجّل له إن كان أقدم (مثل الأيام المُدخلة يدوياً)
+  let createdStr = (() => { const p = bgParts(new Date(w.created_at)); return `${p.y}-${pad(p.m)}-${pad(p.d)}`; })();
+  logs.forEach(l => { if (l.work_date < createdStr) createdStr = l.work_date; });
+  const endH = settings.work_end ? +String(settings.work_end).slice(0,2) : 18, endM = settings.work_end ? +String(settings.work_end).slice(3,5) : 0;
+  const pastEndToday = (now.H * 60 + now.M) >= (endH * 60 + endM);
+
+  let expected = 0, actual = 0, short = 0, over = 0, workdays = 0, presentDays = 0;
+  const rows = [];
+  for (let d = 1; d <= daysInMonth(y, mo); d++){
+    const ds = `${y}-${pad(mo)}-${pad(d)}`, dow = dowOf(ds), isOff = weekend.includes(dow);
+    const dl = logs.filter(l => l.work_date === ds);
+    let mins = 0, openFlag = false;
+    dl.forEach(l => {
+      if (l.check_out) mins += (new Date(l.check_out) - new Date(l.check_in)) / 60000;
+      else if (ds === tStr) { mins += (Date.now() - new Date(l.check_in)) / 60000; openFlag = true; }
+      else openFlag = true;
+    });
+    mins = Math.max(0, mins);
+    const beforeStart = ds < createdStr;
+    let dShort = 0, dOver = 0;
+    if (!isOff){
+      if (!beforeStart){ expected += daily; workdays++; }
+      if (mins > daily) dOver = mins - daily;
+      const dayDone = ds < tStr || (ds === tStr && pastEndToday && !dl.some(l => !l.check_out));
+      if (!beforeStart && dayDone && mins < daily) dShort = daily - mins;
+    } else dOver = mins;
+    if (dl.length) presentDays++;
+    actual += mins; short += dShort; over += dOver;
+    rows.push({ ds, d, dow, isOff, dl, mins, openFlag, dShort, dOver, beforeStart });
+  }
+
+  EDIT_W = { id: w.id, email, full_name: w.full_name, department: w.department, is_admin: w.is_admin, active: w.active };
+  const html = `
+  <div class="print-only" style="text-align:center;margin-bottom:8px"><h2>XON — تقرير الحضور والانصراف</h2></div>
+  <div class="card">
+    <div class="row" style="align-items:flex-start">
+      <div class="av" style="flex:0 0 54px;width:54px;height:54px;font-size:18px">${esc(initials(w.full_name))}</div>
+      <div style="flex:1">
+        <h2 style="margin:0">${esc(w.full_name)}</h2>
+        <div class="mute">القسم: <b style="color:var(--ink)">${esc(w.department || '—')}</b></div>
+        ${email ? `<div class="mute num" style="text-align:right">${esc(email)}</div>` : ''}
+        ${!w.active ? '<span class="badge b-mute">موقوف</span>' : ''}
+      </div>
+    </div>
+    ${!selfView ? `<div class="row noprint" style="margin-top:6px">
+      <button class="btn light" style="margin-top:6px" onclick="workerForm(EDIT_W)">✏️ تعديل البيانات</button>
+      <button class="btn light" style="margin-top:6px" onclick="window.print()">🖨️ طباعة</button></div>` : `<button class="btn light noprint" onclick="window.print()">🖨️ طباعة</button>`}
+  </div>
+  <div class="card">
+    <div class="monthbar">
+      <button onclick="navMonth('${workerId}',${y},${mo},1,${!!selfView})">›</button>
+      <div class="m">${AR_MONTHS[mo-1]} ${y}</div>
+      <button onclick="navMonth('${workerId}',${y},${mo},-1,${!!selfView})">‹</button>
+    </div>
+    ${!selfView ? '<div class="mute noprint" style="margin-bottom:8px">اضغط على أي يوم لتعديل أو إضافة دخول/خروج يدوياً</div>' : ''}
+    <div class="tblwrap"><table>
+      <thead><tr><th>اليوم</th><th>دخول</th><th>خروج</th><th>ساعات العمل</th></tr></thead>
+      <tbody>${rows.map(r => `
+        <tr class="${r.isOff ? 'fri' : ''} ${r.ds === tStr ? 'today' : ''} ${!selfView ? 'click' : ''}" ${!selfView ? `onclick="dayEditor('${workerId}','${r.ds}')"` : ''}>
+          <td>${AR_DAYS[r.dow]}<span class="sub num" style="font-size:11px;color:var(--mute)">${r.d}/${mo}</span></td>
+          <td>${r.dl.length ? r.dl.map(l => `<span class="sub num">${hm(l.check_in)}</span>`).join('') : (r.isOff ? '<span class="badge b-warn">عطلة</span>' : (r.ds > tStr || r.beforeStart || (r.ds === tStr && !pastEndToday)) ? '—' : '<span class="badge b-bad">غياب</span>')}</td>
+          <td>${r.dl.map(l => `<span class="sub num">${l.check_out ? hm(l.check_out) : (r.ds === tStr ? '<span class="badge b-ok">داخل</span>' : '<span class="badge b-warn">بدون خروج</span>')}</span>`).join('') || '—'}</td>
+          <td class="num"><b>${r.dl.length ? fmtH(r.mins) : '—'}</b>
+            ${r.dOver > 0.5 ? `<span class="sub" style="color:var(--ok);font-size:12px">+${fmtH(r.dOver)}</span>` : ''}
+            ${r.dShort > 0.5 && r.dl.length ? `<span class="sub" style="color:var(--bad);font-size:12px">-${fmtH(r.dShort)}</span>` : ''}</td>
+        </tr>`).join('')}
+      </tbody>
+      <tfoot>
+        <tr class="sumrow"><td colspan="3">ساعات العمل المتوقعة (${workdays} يوم × ${settings.daily_hours} ساعة)</td><td class="num">${fmtH(expected)}</td></tr>
+        <tr class="sumrow"><td colspan="3">ساعات العمل الفعلية (${presentDays} يوم حضور)</td><td class="num">${fmtH(actual)}</td></tr>
+        <tr class="sumrow"><td colspan="3" style="color:var(--bad)">النقص</td><td class="num" style="color:var(--bad)">${fmtH(short)}</td></tr>
+        <tr class="sumrow"><td colspan="3" style="color:var(--ok)">الإضافي</td><td class="num" style="color:var(--ok)">${fmtH(over)}</td></tr>
+      </tfoot>
+    </table></div>
+    <div class="sumgrid">
+      <div class="stat s1"><div class="v">${fmtH(expected)}</div><div class="k">المتوقعة</div></div>
+      <div class="stat s2"><div class="v">${fmtH(actual)}</div><div class="k">الفعلية</div></div>
+      <div class="stat s3"><div class="v">${fmtH(short)}</div><div class="k">النقص</div></div>
+      <div class="stat s4"><div class="v">${fmtH(over)}</div><div class="k">الإضافي</div></div>
+    </div>
+    <div class="mute" style="margin-top:10px">النقص يُحسب لكل يوم دوام انتهى ولم يكمل فيه العامل ${settings.daily_hours} ساعات (والغياب يُحسب نقصاً كاملاً). الإضافي = ما زاد عن ${settings.daily_hours} ساعات في يوم الدوام + كل ساعات أيام العطلة.</div>
+  </div>`;
+  app.querySelector('.wrap').innerHTML = html;
+  if (!selfView && w.active){
+    const { data: op } = await sb.from('att_logs').select('id,check_in').eq('worker_id', workerId).is('check_out', null).limit(1);
+    const open = op && op[0];
+    const box = document.createElement('div'); box.className = 'card noprint';
+    box.innerHTML = `<h3>تسجيل الآن</h3>
+      <div class="state ${open ? 'ok' : ''}" style="margin:0 0 4px">${open ? `🟢 داخل الشركة منذ <b class="num">${hm(open.check_in)}</b>` : '⚪ خارج الشركة'}</div>
+      ${open ? `<button class="btn red" style="font-size:18px" onclick="adminPunchHere('${workerId}','out',this)">🏠 تسجيل خروج الآن</button>`
+             : `<button class="btn green" style="font-size:18px" onclick="adminPunchHere('${workerId}','in',this)">🏢 تسجيل دخول الآن</button>`}
+      <div class="mute" style="margin-top:8px">لتسجيل يوم سابق أو وقت مختلف: اضغط على اليوم في الجدول.</div>`;
+    const wrap = app.querySelector('.wrap'); wrap.insertBefore(box, wrap.children[2]);
+  }
+}
+function navMonth(id, y, m, delta, selfView){ m += delta; if (m < 1){ m = 12; y--; } if (m > 12){ m = 1; y++; } current.args = [id, y, m, selfView]; monthScreen(id, y, m, selfView); }
+
+async function adminPunchHere(id, kind, btn){
+  btn.disabled = true;
+  try { const r = await rpc('att_admin_punch', { p_worker: id, p_kind: kind });
+    toast(kind === 'in' ? '✅ تم تسجيل الدخول ' + hm(r.check_in) : '✅ تم تسجيل الخروج ' + hm(r.check_out)); refreshScreen(); }
+  catch(e){ toast(errText(e)); btn.disabled = false; }
+}
+/* ---------- تعديل يوم (للمدير) ---------- */
+async function dayEditor(workerId, ds){
+  const { data: logs, error } = await sb.from('att_logs').select('*').eq('worker_id', workerId).eq('work_date', ds).order('check_in');
+  if (error) return toast(errText(error));
+  const hhmm = ts => { const p = bgParts(new Date(ts)); return `${pad(p.H)}:${pad(p.M)}`; };
+  const toIso = (t, base) => { if (!t) return null; let d = new Date(`${ds}T${t}:00+03:00`); if (base && d <= base) d = new Date(d.getTime() + 86400000); return d.toISOString(); };
+  const openOne = (logs || []).find(l => !l.check_out);
+  const [yy, mm, dd] = ds.split('-');
+  const block = (l, i) => `<div class="card" style="box-shadow:none;border:1px solid var(--line);padding:12px" data-id="${l.id}">
+      <div class="row"><b>فترة ${i + 1}</b>${!l.check_out ? '<span class="badge b-ok" style="flex:0;white-space:nowrap">داخل — بدون خروج</span>' : ''}</div>
+      <div class="row"><div><label>🏢 الدخول</label><input type="time" class="e_in" value="${hhmm(l.check_in)}"></div>
+      <div><label>🏠 الخروج</label><input type="time" class="e_out" value="${l.check_out ? hhmm(l.check_out) : ''}"></div></div>
+      <label>ملاحظة</label><input class="e_note" value="${esc(l.note || '')}" placeholder="اختياري">
+      <div class="row"><button class="btn e_save" style="margin-top:8px">💾 حفظ</button><button class="btn red e_del" style="margin-top:8px">🗑️ حذف</button></div>
+    </div>`;
+  const m = document.createElement('div'); m.className = 'modal';
+  m.innerHTML = `<div class="sheet"><h2>${AR_DAYS[dowOf(ds)]} ${+dd}/${+mm}/${yy}</h2>
+    ${openOne ? `<div class="card" style="box-shadow:none;background:var(--badbg);padding:12px">
+        <b>العامل داخل منذ ${hm(openOne.check_in)} ولم يسجّل خروج</b>
+        <label>🏠 وقت الخروج</label><input type="time" id="q_out" value="${ds === todayStr() ? hhmm(new Date()) : '18:00'}">
+        <button class="btn red" id="q_out_b">🏠 تسجيل الخروج فقط</button></div>` : ''}
+    ${(logs || []).map(block).join('')}
+    <div class="card" style="box-shadow:none;border:1.5px dashed var(--line);padding:12px">
+      <b>➕ تسجيل جديد لهذا اليوم</b>
+      <div class="row"><div><label>🏢 الدخول</label><input type="time" id="n_in" value="09:00"></div>
+      <div><label>🏠 الخروج</label><input type="time" id="n_out" value=""></div></div>
+      <div class="mute" style="margin-top:6px">اترك الخروج فارغاً لتسجيل <b>الدخول فقط</b>، والعامل يسجّل خروجه بنفسه.</div>
+      <label>ملاحظة</label><input id="n_note" placeholder="اختياري">
+      <button class="btn green" id="n_b">${openOne ? '➕ إضافة فترة' : '💾 حفظ'}</button>
+    </div>
+    <div id="e_m" class="msg err"></div>
+    <button class="btn light" onclick="this.closest('.modal').remove()">إغلاق</button></div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  const err = t => { const x = m.querySelector('#e_m'); x.textContent = t; x.className = 'msg err show'; x.scrollIntoView({ block: 'nearest' }); };
+  const save = async (id, inIso, outIso, note) => {
+    try { await rpc('att_admin_save_log', { p_id: id, p_worker: workerId, p_in: inIso, p_out: outIso, p_note: note });
+      m.remove(); toast('✅ تم الحفظ'); refreshScreen(); }
+    catch(e){ err(errText(e)); }
+  };
+  if (openOne) m.querySelector('#q_out_b').onclick = () => {
+    const t = m.querySelector('#q_out').value; if (!t) return err('حدد وقت الخروج');
+    const inD = new Date(openOne.check_in);
+    save(openOne.id, openOne.check_in, toIso(t, inD), openOne.note || '');
+  };
+  m.querySelector('#n_b').onclick = () => {
+    const i = m.querySelector('#n_in').value, o = m.querySelector('#n_out').value;
+    if (!i) return err('حدد وقت الدخول');
+    if (!o && openOne) return err('العامل عنده دخول مفتوح بدون خروج — سجّل خروجه أولاً');
+    const inIso = toIso(i);
+    save(null, inIso, o ? toIso(o, new Date(inIso)) : null, m.querySelector('#n_note').value);
+  };
+  m.querySelectorAll('[data-id]').forEach(box => {
+    const id = +box.dataset.id, l = logs.find(x => x.id === id);
+    box.querySelector('.e_save').onclick = () => {
+      const i = box.querySelector('.e_in').value, o = box.querySelector('.e_out').value;
+      if (!i) return err('حدد وقت الدخول');
+      const inIso = toIso(i);
+      save(id, inIso, o ? toIso(o, new Date(inIso)) : null, box.querySelector('.e_note').value);
+    };
+    box.querySelector('.e_del').onclick = async () => {
+      if (!confirm('حذف هذه الفترة؟')) return;
+      const { error } = await sb.from('att_logs').delete().eq('id', id);
+      if (error) return err(errText(error));
+      m.remove(); toast('تم الحذف'); refreshScreen();
+    };
+  });
+}
+
+/* ================== تشغيل ================== */
+sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') { ME = null; } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && current && current.fn === workerHome) workerHome(); });
+boot();
+</script>
+</body>
+</html>
